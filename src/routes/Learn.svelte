@@ -41,6 +41,8 @@
           <p>{c.whatsHappening}</p>
           <h3>Commonly noticed</h3>
           <p>{c.commonlyNoticed}</p>
+          <h3>How it can shift</h3>
+          <p>{c.withinPhase}</p>
           <p class="reminder">{c.reminder}</p>
         </div>
       {/if}
