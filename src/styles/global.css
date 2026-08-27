@@ -1,0 +1,197 @@
+/* Cadence — warm & reassuring theme.
+   Deliberately not the pink-floral period-app cliché: warm clay, amber, and
+   muted mauve on a soft, paper-warm background. Adult, calm, human. */
+
+:root {
+  color-scheme: light;
+
+  --bg: #faf4ee;
+  --surface: #fffaf5;
+  --surface-2: #f5ebe1;
+  --border: #ecdfd2;
+  --text: #35302c;
+  --text-muted: #8a7d73;
+
+  --clay: #c46a45; /* primary */
+  --clay-dark: #a9542f;
+  --clay-soft: #f4e1d6;
+
+  /* phase accents — warm, muted, distinct */
+  --menstrual: #c05a45;
+  --menstrual-soft: #f6ded7;
+  --follicular: #d98f52;
+  --follicular-soft: #f8e7d3;
+  --ovulatory: #cba23e;
+  --ovulatory-soft: #f6eccf;
+  --luteal: #9a6f86;
+  --luteal-soft: #eddfe6;
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 2px 16px rgba(120, 80, 50, 0.08);
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  max-width: 30rem;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.4em;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+/* ---- shared components ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--clay);
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.05s ease;
+  width: 100%;
+}
+.btn:hover {
+  background: var(--clay-dark);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--clay-dark);
+  font-weight: 600;
+  width: auto;
+  padding: 0.6rem 0.75rem;
+}
+.btn-ghost:hover {
+  background: var(--clay-soft);
+}
+.btn-quiet {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn-quiet:hover {
+  background: var(--border);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.field {
+  display: block;
+  margin-bottom: 1.1rem;
+}
+.field > span {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--clay);
+  outline-offset: 1px;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+.small {
+  font-size: 0.85rem;
+}
+.error {
+  color: var(--menstrual);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  transition: all 0.12s ease;
+}
+.chip[aria-pressed='true'] {
+  background: var(--clay);
+  border-color: var(--clay);
+  color: #fff;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Cadence — private cycle tracking",
+  "short_name": "Cadence",
+  "description": "Understand where you are in your cycle, explained clearly and without judgment. Your data never leaves your device.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf4ee",
+  "theme_color": "#c46a45",
+  "categories": ["health", "lifestyle"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
