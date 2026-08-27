@@ -5,6 +5,7 @@
 
   const order: Phase[] = ['menstrual', 'follicular', 'ovulatory', 'luteal'];
   let open = $state<Phase | null>($learnFocus ?? $cycle.phase?.phase ?? 'menstrual');
+  let howOpen = $state(false);
 
   // If we arrived here via a "Learn more" link, open that phase, then clear the
   // request so a later manual visit isn't forced back to it.
@@ -45,6 +46,37 @@
       {/if}
     </div>
   {/each}
+
+  <div class="acc card howto">
+    <button class="acc-head" aria-expanded={howOpen} onclick={() => (howOpen = !howOpen)}>
+      <span>How Cadence works out where you are</span>
+      <span class="chev">{howOpen ? '–' : '+'}</span>
+    </button>
+    {#if howOpen}
+      <div class="acc-body">
+        <p>
+          Cadence estimates your phase from the dates you log — it doesn't measure your hormones or
+          detect ovulation directly. Here's how the boundaries are drawn:
+        </p>
+        <ul>
+          <li>Your <strong>period phase</strong> covers your bleeding days, based on how long your periods usually last.</li>
+          <li>
+            <strong>Ovulation</strong> is estimated as about 14 days <em>before</em> your next expected
+            period — the phase after ovulation is the most consistent part of the cycle, so counting
+            back from your next period is more reliable than counting forward. The
+            <strong>ovulatory</strong> phase is the short window around that point.
+          </li>
+          <li><strong>Follicular</strong> is the stretch between your period and that window; <strong>luteal</strong> is the stretch after it, until your next period.</li>
+        </ul>
+        <p>
+          Because the boundaries are counted from your <em>predicted</em> next period, they shift a
+          little as your predictions sharpen — and a phase is only really confirmed once your next
+          period actually begins. The more cycles you log, the more accurate it gets. Irregular
+          cycles make it less precise, which is why you'll sometimes see a lower-confidence note.
+        </p>
+      </div>
+    {/if}
+  </div>
 
   <p class="disclaimer small muted">{MEDICAL_DISCLAIMER}</p>
 </section>
@@ -116,6 +148,19 @@
     border-radius: var(--radius-sm);
     padding: 0.75rem 0.9rem;
     margin-top: 0.75rem;
+  }
+  .acc-body ul {
+    margin: 0.5rem 0 0.75rem;
+    padding-left: 1.1rem;
+  }
+  .acc-body li {
+    margin-bottom: 0.5rem;
+  }
+  .howto {
+    margin-top: 0.5rem;
+  }
+  .howto .acc-head {
+    font-size: 0.98rem;
   }
   .disclaimer {
     margin-top: 1.5rem;
