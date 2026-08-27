@@ -38,6 +38,26 @@ a one-time **recovery code** as a backup way in. If you lose both, your data is
 unrecoverable — by design. See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md)
 for the full explanation and threat model.
 
+## How your data is stored
+
+No cookies, no account, no server. Cadence uses three on-device browser
+mechanisms and nothing else:
+
+- **IndexedDB — your data.** Your daily logs live in your browser's own
+  database, on your device's disk, as **encrypted ciphertext**. Alongside them
+  is non-secret vault metadata (random salts and the wrapped keys); none of it
+  is readable without your passphrase or recovery code.
+- **Cache Storage — the app.** The service worker caches the app's own
+  HTML/JS/CSS so it loads instantly and works offline. This is only code, never
+  personal data.
+- **Memory — the key.** Your decryption key is never written to disk. It's
+  re-derived from your passphrase on unlock, held in memory while the app is
+  open, and dropped when you lock or close it.
+
+Storage is scoped to one origin, one browser, one device — so it does **not**
+sync across devices (that's what the encrypted backup export is for), and
+clearing browser data or using a private window will erase it.
+
 ## Verify the privacy claim yourself
 
 1. Open the app, then open your browser's developer tools → **Network** tab.

@@ -84,6 +84,20 @@
   </div>
 
   <div class="card block">
+    <h2>How your data is stored</h2>
+    <p class="small muted">
+      Everything you log stays in this browser, on this device. There's no account and no server —
+      nothing is ever sent anywhere.
+    </p>
+    <ul class="how small">
+      <li>Your entries are saved in your browser's own storage, <strong>encrypted</strong>. Only your passphrase or recovery code can unlock them.</li>
+      <li><strong>No cookies, no tracking, no cloud.</strong> The app can't even reach the internet once it's loaded.</li>
+      <li>Because it lives in this one browser on this one device, it doesn't sync automatically. Use <strong>Backup</strong> above to keep a copy or move it to another device.</li>
+      <li>Clearing your browser's data — or using a private window — will erase it, so keep a backup somewhere safe.</li>
+    </ul>
+  </div>
+
+  <div class="card block">
     <h2>Security</h2>
     {#if !showChangePass}
       <button class="btn btn-quiet" onclick={() => (showChangePass = true)}>Change passphrase</button>
@@ -129,6 +143,18 @@
   }
   .block h2 {
     font-size: 1.05rem;
+  }
+  .how {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .how li {
+    margin-bottom: 0.5rem;
+  }
+  .how strong {
+    color: var(--text);
   }
   .block .btn {
     margin-top: 0.5rem;
