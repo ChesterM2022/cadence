@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cycle } from '../lib/store';
+  import { cycle, goToLearn } from '../lib/store';
   import { todayISO, formatDate } from '../lib/dates';
   import { PHASE_CONTENT } from '../lib/phaseContent';
   import DayLog from '../lib/components/DayLog.svelte';
@@ -33,6 +33,9 @@
       <h1>{content.label}</h1>
       <p class="tagline">{content.tagline}</p>
       <p class="whats">{content.whatsHappening}</p>
+      <button class="learn-more" onclick={() => goToLearn(info.phase)}>
+        Learn more about this phase →
+      </button>
     </div>
 
     {#if $cycle.prediction}
@@ -105,6 +108,16 @@
   .whats {
     font-size: 0.95rem;
     margin: 0;
+  }
+  .learn-more {
+    margin-top: 0.9rem;
+    padding: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--clay-dark);
+  }
+  .learn-more:hover {
+    text-decoration: underline;
   }
   .predict {
     display: flex;

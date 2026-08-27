@@ -1,10 +1,19 @@
 <script lang="ts">
   import { PHASE_CONTENT, MEDICAL_DISCLAIMER } from '../lib/phaseContent';
   import type { Phase } from '../lib/phase';
-  import { cycle } from '../lib/store';
+  import { cycle, learnFocus } from '../lib/store';
 
   const order: Phase[] = ['menstrual', 'follicular', 'ovulatory', 'luteal'];
-  let open = $state<Phase | null>($cycle.phase?.phase ?? 'menstrual');
+  let open = $state<Phase | null>($learnFocus ?? $cycle.phase?.phase ?? 'menstrual');
+
+  // If we arrived here via a "Learn more" link, open that phase, then clear the
+  // request so a later manual visit isn't forced back to it.
+  $effect(() => {
+    if ($learnFocus) {
+      open = $learnFocus;
+      learnFocus.set(null);
+    }
+  });
 </script>
 
 <section>

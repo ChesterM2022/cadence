@@ -40,13 +40,25 @@ import {
   type CycleStats,
   type PhaseInfo,
   type Prediction,
+  type Phase,
 } from './phase';
 import { hasAnyData, type DayEntry } from './types';
 import { todayISO } from './dates';
 
 export type Screen = 'loading' | 'onboarding' | 'locked' | 'app';
+export type Tab = 'today' | 'history' | 'learn' | 'settings';
 
 export const screen = writable<Screen>('loading');
+
+/** Which main tab is showing, and (optionally) a phase to open in Learn. */
+export const activeTab = writable<Tab>('today');
+export const learnFocus = writable<Phase | null>(null);
+
+/** Jump to the Learn tab with a specific phase expanded. */
+export function goToLearn(phase: Phase): void {
+  learnFocus.set(phase);
+  activeTab.set('learn');
+}
 export const entries = writable<DayEntry[]>([]);
 export const settings = writable<Settings>({ fallbackCycleLength: 28 });
 

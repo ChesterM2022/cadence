@@ -3,9 +3,7 @@
   import Learn from './Learn.svelte';
   import History from './History.svelte';
   import Settings from './Settings.svelte';
-
-  type Tab = 'today' | 'learn' | 'history' | 'settings';
-  let tab = $state<Tab>('today');
+  import { activeTab, type Tab } from '../lib/store';
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'today', label: 'Today', icon: '◉' },
@@ -17,11 +15,11 @@
 
 <div class="main">
   <div class="content">
-    {#if tab === 'today'}
+    {#if $activeTab === 'today'}
       <Today />
-    {:else if tab === 'history'}
+    {:else if $activeTab === 'history'}
       <History />
-    {:else if tab === 'learn'}
+    {:else if $activeTab === 'learn'}
       <Learn />
     {:else}
       <Settings />
@@ -30,7 +28,7 @@
 
   <nav class="tabbar">
     {#each tabs as t (t.id)}
-      <button class="tab" aria-current={tab === t.id} onclick={() => (tab = t.id)}>
+      <button class="tab" aria-current={$activeTab === t.id} onclick={() => activeTab.set(t.id)}>
         <span class="icon">{t.icon}</span>
         <span class="label">{t.label}</span>
       </button>
