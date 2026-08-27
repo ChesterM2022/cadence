@@ -1,5 +1,6 @@
 <script lang="ts">
   import { unlockWithPass, unlockWithCode } from '../lib/store';
+  import PasswordField from '../lib/components/PasswordField.svelte';
 
   let mode = $state<'passphrase' | 'recovery'>('passphrase');
   let value = $state('');
@@ -31,14 +32,14 @@
   <p class="muted">Your data is locked on this device. Enter your {mode === 'passphrase' ? 'passphrase' : 'recovery code'} to open it.</p>
 
   <form onsubmit={(e) => { e.preventDefault(); void unlock(); }}>
-    <label class="field">
-      <span>{mode === 'passphrase' ? 'Passphrase' : 'Recovery code'}</span>
-      {#if mode === 'passphrase'}
-        <input type="password" bind:value autocomplete="current-password" placeholder="your passphrase" />
-      {:else}
+    {#if mode === 'passphrase'}
+      <PasswordField bind:value label="Passphrase" placeholder="your passphrase" autocomplete="current-password" />
+    {:else}
+      <label class="field">
+        <span>Recovery code</span>
         <input type="text" bind:value autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" />
-      {/if}
-    </label>
+      </label>
+    {/if}
     {#if error}<p class="error">{error}</p>{/if}
     <button class="btn" type="submit" disabled={busy || !value}>{busy ? 'Unlocking…' : 'Unlock'}</button>
   </form>

@@ -2,6 +2,7 @@
   import { completeOnboarding, enterApp } from '../lib/store';
   import { todayISO } from '../lib/dates';
   import RecoveryCode from '../lib/components/RecoveryCode.svelte';
+  import PasswordField from '../lib/components/PasswordField.svelte';
 
   let step = $state(0);
   let lastPeriod = $state(todayISO());
@@ -78,14 +79,8 @@
         word. Because nothing is stored in the cloud, <strong>it cannot be reset</strong>. We'll give
         you a one-time recovery code next as a backup.
       </p>
-      <label class="field">
-        <span>Passphrase</span>
-        <input type="password" bind:value={passphrase} autocomplete="new-password" placeholder="at least 8 characters" />
-      </label>
-      <label class="field">
-        <span>Confirm passphrase</span>
-        <input type="password" bind:value={confirm} autocomplete="new-password" />
-      </label>
+      <PasswordField bind:value={passphrase} label="Passphrase" placeholder="at least 8 characters" />
+      <PasswordField bind:value={confirm} label="Confirm passphrase" />
       {#if error}<p class="error">{error}</p>{/if}
       <button class="btn" onclick={create} disabled={busy || !passphraseValid}>
         {busy ? 'Creating your private space…' : 'Continue'}

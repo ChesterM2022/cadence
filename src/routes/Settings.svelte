@@ -8,6 +8,7 @@
   } from '../lib/store';
   import { todayISO } from '../lib/dates';
   import { MEDICAL_DISCLAIMER } from '../lib/phaseContent';
+  import PasswordField from '../lib/components/PasswordField.svelte';
 
   let msg = $state('');
   let showChangePass = $state(false);
@@ -87,14 +88,8 @@
     {#if !showChangePass}
       <button class="btn btn-quiet" onclick={() => (showChangePass = true)}>Change passphrase</button>
     {:else}
-      <label class="field">
-        <span>New passphrase</span>
-        <input type="password" bind:value={newPass} autocomplete="new-password" />
-      </label>
-      <label class="field">
-        <span>Confirm new passphrase</span>
-        <input type="password" bind:value={confirmPass} autocomplete="new-password" />
-      </label>
+      <PasswordField bind:value={newPass} label="New passphrase" />
+      <PasswordField bind:value={confirmPass} label="Confirm new passphrase" />
       {#if passErr}<p class="error">{passErr}</p>{/if}
       <div class="row">
         <button class="btn" onclick={saveNewPass}>Save</button>
