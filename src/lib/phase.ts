@@ -188,6 +188,37 @@ export function lastPeriodStart(periods: PeriodLog[]): string | undefined {
   return periods.length ? periods[periods.length - 1].start : undefined;
 }
 
+export type PhasePosition = 'early' | 'mid' | 'late';
+
+/** Day range (inclusive-ish) a phase occupies within the cycle, from stats. */
+function phaseRange(phase: Phase, stats: CycleStats): [number, number] {
+  const ov = Math.max(1, stats.avgCycleLength - LUTEAL_LENGTH);
+  switch (phase) {
+    case 'menstrual':
+      return [1, stats.avgPeriodLength];
+    case 'follicular':
+      return [stats.avgPeriodLength + 1, ov - OVULATION_WINDOW - 1];
+    case 'ovulatory':
+      return [ov - OVULATION_WINDOW, ov + OVULATION_WINDOW];
+    case 'luteal':
+      return [ov + OVULATION_WINDOW + 1, stats.avgCycleLength];
+  }
+}
+
+/**
+ * Where within the current phase a woman is — early, mid, or late. Lets the app
+ * say "late luteal" (when premenstrual changes cluster) rather than just
+ * "luteal". Days past the phase's end (e.g. an overdue period) count as late.
+ */
+export function phasePosition(dayOfCycle: number, phase: Phase, stats: CycleStats): PhasePosition {
+  const [start, end] = phaseRange(phase, stats);
+  if (end <= start) return 'mid'; // phase too short to subdivide
+  const fraction = (dayOfCycle - start) / (end - start);
+  if (fraction < 1 / 3) return 'early';
+  if (fraction < 2 / 3) return 'mid';
+  return 'late';
+}
+
 export const PHASE_LABEL: Record<Phase, string> = {
   menstrual: 'Menstrual phase',
   follicular: 'Follicular phase',

@@ -12,7 +12,7 @@
  * It is educational content, not medical advice, and not a contraceptive method.
  */
 
-import type { Phase } from './phase';
+import type { Phase, PhasePosition } from './phase';
 
 export interface PhaseContent {
   label: string;
@@ -77,6 +77,41 @@ export const PHASE_CONTENT: Record<Phase, PhaseContent> = {
       'If premenstrual symptoms are severe enough to disrupt your life or relationships each cycle, that is worth raising with a clinician — it is common, and it is treatable.',
   },
 };
+
+/**
+ * Short, contextual notes for the Today screen — tuned to where within the
+ * phase a woman is (early / mid / late), so the app speaks to her actual week
+ * rather than the phase in general. Hedged and non-prescriptive.
+ */
+export const CONTEXTUAL_NOTE: Record<Phase, Record<PhasePosition, string>> = {
+  menstrual: {
+    early: 'The first days often bring the heaviest flow and the most cramping. Rest is more than fair.',
+    mid: 'Around the middle of your period, flow and cramps often begin to settle.',
+    late: 'Flow usually eases toward the end, and many people feel their energy starting to return.',
+  },
+  follicular: {
+    early: 'Just past your period — estrogen is low but rising, and energy is often still rebuilding.',
+    mid: 'Estrogen is climbing steadily now; many people notice rising energy and clearer focus.',
+    late: 'Approaching ovulation — rising estrogen often brings a lift in energy, focus, and libido.',
+  },
+  ovulatory: {
+    early: 'Around ovulation — estrogen peaks and an egg is released. Some feel their most energetic and social.',
+    mid: 'Around ovulation — estrogen peaks and an egg is released. Some feel their most energetic and social.',
+    late: 'The ovulation window is winding down as your body moves toward the luteal phase.',
+  },
+  luteal: {
+    early: 'Early luteal — often one of the steadiest stretches of the cycle, as progesterone rises.',
+    mid: 'Progesterone is high and fairly steady; for many this is a calm, even stretch.',
+    late: 'Late luteal — the days when premenstrual changes are most common. If they show up, they usually ease once your period begins.',
+  },
+};
+
+/** A short headline for the current position, e.g. "Late luteal phase". */
+export function positionHeadline(phase: Phase, position: PhasePosition): string {
+  if (phase === 'ovulatory') return 'Ovulation window';
+  const pos = position.charAt(0).toUpperCase() + position.slice(1);
+  return `${pos} ${phase} phase`;
+}
 
 export const MEDICAL_DISCLAIMER =
   'Cadence is an educational tool, not medical advice. Its phase and period estimates are calculated from your own logged dates and can be wrong, especially with irregular cycles. It is not a contraceptive method and cannot diagnose any condition. For anything concerning about your body, talk to a qualified clinician.';

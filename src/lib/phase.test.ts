@@ -5,6 +5,7 @@ import {
   predictNextPeriod,
   derivePeriods,
   lastPeriodStart,
+  phasePosition,
   type PeriodLog,
 } from './phase';
 import { addDays } from './dates';
@@ -126,6 +127,30 @@ describe('derivePeriods', () => {
   it('returns nothing when only non-bleeding data is logged', () => {
     expect(derivePeriods([{ date: '2026-08-01', energy: 'high' }])).toEqual([]);
     expect(lastPeriodStart([])).toBeUndefined();
+  });
+});
+
+describe('phasePosition', () => {
+  const stats = computeCycleStats(regularPeriods('2026-08-01', 28, 7)); // period 5, ovulation day 14
+
+  it('places early vs late within the follicular phase', () => {
+    // follicular range is days 6..12
+    expect(phasePosition(7, 'follicular', stats)).toBe('early');
+    expect(phasePosition(11, 'follicular', stats)).toBe('late');
+  });
+
+  it('detects late luteal (the premenstrual window)', () => {
+    // luteal range is days 16..28
+    expect(phasePosition(17, 'luteal', stats)).toBe('early');
+    expect(phasePosition(25, 'luteal', stats)).toBe('late');
+  });
+
+  it('treats an overdue period as late luteal', () => {
+    expect(phasePosition(31, 'luteal', stats)).toBe('late');
+  });
+
+  it('returns mid for the short ovulatory window', () => {
+    expect(phasePosition(14, 'ovulatory', stats)).toBe('mid');
   });
 });
 

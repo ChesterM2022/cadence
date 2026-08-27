@@ -1,8 +1,10 @@
 <script lang="ts">
   import { cycle, goToLearn } from '../lib/store';
   import { todayISO, formatDate } from '../lib/dates';
-  import { PHASE_CONTENT } from '../lib/phaseContent';
+  import { PHASE_CONTENT, CONTEXTUAL_NOTE, positionHeadline } from '../lib/phaseContent';
+  import { phasePosition } from '../lib/phase';
   import DayLog from '../lib/components/DayLog.svelte';
+  import CycleWheel from '../lib/components/CycleWheel.svelte';
 
   const today = todayISO();
 
@@ -28,10 +30,17 @@
   {#if $cycle.phase}
     {@const info = $cycle.phase}
     {@const content = PHASE_CONTENT[info.phase]}
+    {@const pos = phasePosition(info.dayOfCycle, info.phase, $cycle.stats)}
     <div class="phase-card phase-{info.phase}">
-      <div class="daychip">Day {info.dayOfCycle}</div>
-      <h1>{content.label}</h1>
-      <p class="tagline">{content.tagline}</p>
+      <CycleWheel
+        dayOfCycle={info.dayOfCycle}
+        cycleLength={$cycle.stats.avgCycleLength}
+        periodLength={$cycle.stats.avgPeriodLength}
+        ovulationDay={info.ovulationDay}
+        phase={info.phase}
+      />
+      <h1>{positionHeadline(info.phase, pos)}</h1>
+      <p class="context">{CONTEXTUAL_NOTE[info.phase][pos]}</p>
       <p class="whats">{content.whatsHappening}</p>
       <button class="learn-more" onclick={() => goToLearn(info.phase)}>
         Learn more about this phase →
@@ -89,24 +98,18 @@
     background: var(--luteal-soft);
     border-color: var(--luteal);
   }
-  .daychip {
-    display: inline-block;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 999px;
-    padding: 0.25rem 0.7rem;
-    margin-bottom: 0.6rem;
-  }
   .phase-card h1 {
     font-size: 1.5rem;
+    text-align: center;
   }
-  .tagline {
+  .context {
+    font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.7rem;
   }
   .whats {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
     margin: 0;
   }
   .learn-more {
