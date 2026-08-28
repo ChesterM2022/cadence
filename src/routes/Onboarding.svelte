@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { completeOnboarding, enterApp } from '../lib/store';
+  import { completeOnboarding, completeOnboardingOpen, enterApp } from '../lib/store';
   import { todayISO } from '../lib/dates';
   import RecoveryCode from '../lib/components/RecoveryCode.svelte';
   import PasswordField from '../lib/components/PasswordField.svelte';
@@ -29,7 +29,19 @@
         cycleLength,
         passphrase,
       });
-      step = 3;
+      step = 4;
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Something went wrong.';
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function skipPassphrase() {
+    error = '';
+    busy = true;
+    try {
+      await completeOnboardingOpen({ lastPeriodStart: lastPeriod, cycleLength });
     } catch (e) {
       error = e instanceof Error ? e.message : 'Something went wrong.';
     } finally {
@@ -50,8 +62,8 @@
       <div class="promise card">
         <strong>Your data never leaves this device.</strong>
         <p class="small muted">
-          Everything you log stays on your phone or computer, encrypted. There is no account, no
-          cloud, and no company — not even us — that can see it.
+          Everything you log stays on your phone or computer. There is no account, no cloud, and no
+          company — not even us — that can see it.
         </p>
       </div>
       <button class="btn" onclick={() => (step = 1)}>Get started</button>
@@ -73,11 +85,29 @@
     </div>
   {:else if step === 2}
     <div class="step">
+      <h2>Add a passphrase?</h2>
+      <p class="muted small">
+        A passphrase encrypts your data, so no one can read it even if they get your device. It adds
+        a small step each time you open Cadence. Your data stays on this device either way.
+      </p>
+      <button class="btn" onclick={() => (step = 3)}>Protect with a passphrase</button>
+      <p class="rec small muted">Recommended</p>
+      <button class="btn btn-quiet" onclick={skipPassphrase} disabled={busy}>
+        {busy ? 'Setting up…' : 'Skip for now'}
+      </button>
+      <p class="skipnote small muted">
+        You can add a passphrase anytime in Settings. Without one, your data is stored unencrypted on
+        this device.
+      </p>
+      {#if error}<p class="error">{error}</p>{/if}
+    </div>
+  {:else if step === 3}
+    <div class="step">
       <h2>Set a passphrase</h2>
       <p class="muted small">
-        This encrypts your data. Choose something memorable — a few words is stronger than one odd
-        word. Because nothing is stored in the cloud, <strong>it cannot be reset</strong>. We'll give
-        you a one-time recovery code next as a backup.
+        Choose something memorable — a few words is stronger than one odd word. Because nothing is
+        stored in the cloud, <strong>it cannot be reset</strong>. We'll give you a one-time recovery
+        code next as a backup.
       </p>
       <PasswordField bind:value={passphrase} label="Passphrase" placeholder="at least 8 characters" />
       <PasswordField bind:value={confirm} label="Confirm passphrase" />
@@ -85,8 +115,9 @@
       <button class="btn" onclick={create} disabled={busy || !passphraseValid}>
         {busy ? 'Creating your private space…' : 'Continue'}
       </button>
+      <button class="btn-ghost small back" onclick={() => (step = 2)}>← Back</button>
     </div>
-  {:else if step === 3}
+  {:else if step === 4}
     <div class="step">
       <h2>Save your recovery code</h2>
       <p class="muted small">
@@ -141,5 +172,21 @@
   }
   .ack input {
     margin-top: 0.2rem;
+  }
+  .step :global(.btn) {
+    margin-top: 0.75rem;
+  }
+  .rec {
+    text-align: center;
+    margin: 0.45rem 0 0.5rem;
+    font-weight: 600;
+  }
+  .skipnote {
+    margin-top: 0.75rem;
+    line-height: 1.5;
+  }
+  .back {
+    display: block;
+    margin: 0.85rem auto 0;
   }
 </style>

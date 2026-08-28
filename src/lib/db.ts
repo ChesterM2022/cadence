@@ -15,6 +15,7 @@
 
 import { openDB, type IDBPDatabase } from 'idb';
 import type { EncBlob, VaultMeta } from './crypto';
+import type { DayEntry } from './types';
 
 const DB_NAME = 'cadence';
 const DB_VERSION = 1;
@@ -27,10 +28,15 @@ export interface Settings {
   fallbackCycleLength: number;
 }
 
-/** An encrypted day record as stored on disk. */
+/**
+ * A day record as stored on disk. In encrypted mode `blob` holds the AES-GCM
+ * ciphertext; in open (no-passphrase) mode `plain` holds the entry directly.
+ * Exactly one is set.
+ */
 export interface StoredEntry {
   date: string;
-  blob: EncBlob;
+  blob?: EncBlob;
+  plain?: DayEntry;
 }
 
 /** The shape of an encrypted backup file. */
@@ -38,7 +44,7 @@ export interface BackupFile {
   app: 'cadence';
   version: number;
   exportedAt: string;
-  meta: VaultMeta;
+  meta?: VaultMeta; // absent in open (no-passphrase) mode
   settings: Settings;
   entries: StoredEntry[];
 }
@@ -78,8 +84,23 @@ export async function hasVault(): Promise<boolean> {
 // ---- settings --------------------------------------------------------------
 
 export async function getSettings(): Promise<Settings> {
-  const s = (await (await db()).get(META_STORE, SETTINGS_KEY)) as Settings | undefined;
-  return s ?? { fallbackCycleLength: 28 };
+  return (await getSettingsRaw()) ?? { fallbackCycleLength: 28 };
+}
+
+/** The stored settings record, or undefined if the user hasn't onboarded. */
+export async function getSettingsRaw(): Promise<Settings | undefined> {
+  return (await (await db()).get(META_STORE, SETTINGS_KEY)) as Settings | undefined;
+}
+
+/**
+ * The storage mode on this device:
+ *  - 'encrypted': a passphrase vault exists (data is encrypted at rest)
+ *  - 'open':      onboarded without a passphrase (data stored in the clear)
+ *  - 'none':      not set up yet
+ */
+export async function getMode(): Promise<'encrypted' | 'open' | 'none'> {
+  if (await getVaultMeta()) return 'encrypted';
+  return (await getSettingsRaw()) ? 'open' : 'none';
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
@@ -103,28 +124,28 @@ export async function deleteStoredEntry(date: string): Promise<void> {
 // ---- backup / restore ------------------------------------------------------
 
 export async function buildBackup(): Promise<BackupFile | null> {
-  const meta = await getVaultMeta();
-  if (!meta) return null;
+  const settings = await getSettingsRaw();
+  if (!settings) return null; // not onboarded yet
   return {
     app: 'cadence',
     version: DB_VERSION,
     exportedAt: new Date().toISOString(),
-    meta,
-    settings: await getSettings(),
+    meta: await getVaultMeta(),
+    settings,
     entries: await getAllStoredEntries(),
   };
 }
 
 /** Replace all local data with the contents of a backup file. */
 export async function restoreBackup(backup: BackupFile): Promise<void> {
-  if (backup.app !== 'cadence' || !backup.meta) {
+  if (backup.app !== 'cadence') {
     throw new Error('This does not look like a Cadence backup file.');
   }
   const database = await db();
   const tx = database.transaction([META_STORE, ENTRIES_STORE], 'readwrite');
   await tx.objectStore(META_STORE).clear();
   await tx.objectStore(ENTRIES_STORE).clear();
-  await tx.objectStore(META_STORE).put(backup.meta, VAULT_KEY);
+  if (backup.meta) await tx.objectStore(META_STORE).put(backup.meta, VAULT_KEY);
   await tx.objectStore(META_STORE).put(backup.settings ?? { fallbackCycleLength: 28 }, SETTINGS_KEY);
   for (const e of backup.entries ?? []) await tx.objectStore(ENTRIES_STORE).put(e);
   await tx.done;

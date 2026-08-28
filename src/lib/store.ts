@@ -22,6 +22,7 @@ import {
   saveVaultMeta,
   getSettings,
   saveSettings,
+  getMode,
   getAllStoredEntries,
   putStoredEntry,
   deleteStoredEntry,
@@ -76,24 +77,46 @@ export const cycle = writable<CycleView>({
   prediction: null,
 });
 
-// In-memory only. Cleared on lock.
+/** Whether data on this device is encrypted (passphrase set) or stored open. */
+export const encryptedMode = writable<boolean>(true);
+
+// In-memory only. Cleared on lock. `encrypted` mirrors encryptedMode for logic.
 let dek: CryptoKey | null = null;
 let meta: VaultMeta | null = null;
+let encrypted = true;
 
-/** Decide the opening screen based on whether a vault already exists. */
+function setEncrypted(v: boolean): void {
+  encrypted = v;
+  encryptedMode.set(v);
+}
+
+/** Decide the opening screen based on the device's storage mode. */
 export async function init(): Promise<void> {
-  meta = (await getVaultMeta()) ?? null;
+  const mode = await getMode();
   settings.set(await getSettings());
-  screen.set(meta ? 'locked' : 'onboarding');
+  if (mode === 'encrypted') {
+    meta = (await getVaultMeta()) ?? null;
+    setEncrypted(true);
+    screen.set('locked');
+  } else if (mode === 'open') {
+    setEncrypted(false);
+    dek = null;
+    await loadEntries();
+    screen.set('app');
+  } else {
+    screen.set('onboarding');
+  }
 }
 
 async function loadEntries(): Promise<void> {
-  if (!dek) return;
   const stored = await getAllStoredEntries();
-  const decrypted: DayEntry[] = [];
-  for (const s of stored) decrypted.push(await decryptJSON<DayEntry>(dek, s.blob));
-  decrypted.sort((a, b) => a.date.localeCompare(b.date));
-  entries.set(decrypted);
+  const loaded: DayEntry[] = [];
+  for (const s of stored) {
+    if (s.plain) loaded.push(s.plain);
+    else if (s.blob && dek) loaded.push(await decryptJSON<DayEntry>(dek, s.blob));
+  }
+  loaded.sort((a, b) => a.date.localeCompare(b.date));
+  entries.set(loaded);
   recompute();
 }
 
@@ -126,12 +149,44 @@ export async function completeOnboarding(input: OnboardingInput): Promise<string
   await saveSettings(newSettings);
   meta = vault.meta;
   dek = vault.dek;
+  setEncrypted(true);
   settings.set(newSettings);
   // Seed the last period start so a phase can be shown immediately.
   await saveDay({ date: input.lastPeriodStart, flow: 'medium' });
   // NOTE: we intentionally stay on the onboarding screen so the one-time
   // recovery code can be shown. The caller invokes enterApp() once the user
   // confirms they've saved it.
+  return vault.recoveryCode;
+}
+
+/** Onboard WITHOUT a passphrase — data is stored unencrypted on this device. */
+export async function completeOnboardingOpen(
+  input: Omit<OnboardingInput, 'passphrase'>,
+): Promise<void> {
+  const newSettings: Settings = { fallbackCycleLength: input.cycleLength };
+  await saveSettings(newSettings);
+  meta = null;
+  dek = null;
+  setEncrypted(false);
+  settings.set(newSettings);
+  await saveDay({ date: input.lastPeriodStart, flow: 'medium' });
+  screen.set('app');
+}
+
+/**
+ * Add a passphrase to an existing open vault: create keys, encrypt everything
+ * logged so far, and switch to encrypted mode. Returns the one-time code.
+ */
+export async function addPassphrase(passphrase: string): Promise<string> {
+  const vault = await createVault(passphrase);
+  await saveVaultMeta(vault.meta);
+  meta = vault.meta;
+  dek = vault.dek;
+  setEncrypted(true);
+  // Re-store every existing day as ciphertext (overwrites the plaintext record).
+  for (const e of get(entries)) {
+    await putStoredEntry({ date: e.date, blob: await encryptJSON(dek, e) });
+  }
   return vault.recoveryCode;
 }
 
@@ -143,6 +198,7 @@ export function enterApp(): void {
 export async function unlockWithPass(passphrase: string): Promise<void> {
   if (!meta) throw new Error('No vault on this device.');
   dek = await unlockWithPassphrase(meta, passphrase);
+  setEncrypted(true);
   await loadEntries();
   screen.set('app');
 }
@@ -150,6 +206,7 @@ export async function unlockWithPass(passphrase: string): Promise<void> {
 export async function unlockWithCode(code: string): Promise<void> {
   if (!meta) throw new Error('No vault on this device.');
   dek = await unlockWithRecoveryCode(meta, code);
+  setEncrypted(true);
   await loadEntries();
   screen.set('app');
 }
@@ -166,10 +223,14 @@ export function getEntry(date: string): DayEntry {
 
 /** Save (or, if emptied, delete) a single day's log. */
 export async function saveDay(entry: DayEntry): Promise<void> {
-  if (!dek) throw new Error('Locked.');
+  if (encrypted && !dek) throw new Error('Locked.');
   const rest = get(entries).filter((e) => e.date !== entry.date);
   if (hasAnyData(entry)) {
-    await putStoredEntry({ date: entry.date, blob: await encryptJSON(dek, entry) });
+    const stored =
+      encrypted && dek
+        ? { date: entry.date, blob: await encryptJSON(dek, entry) }
+        : { date: entry.date, plain: entry };
+    await putStoredEntry(stored);
     rest.push(entry);
   } else {
     await deleteStoredEntry(entry.date);
@@ -191,18 +252,29 @@ export async function exportBackup(): Promise<BackupFile> {
   return backup;
 }
 
-/** Restore from a backup file. Data is re-encrypted; the app returns to locked. */
+/** Restore from a backup file. An encrypted backup returns to the lock screen;
+ * an open backup opens straight into the app. */
 export async function importBackup(backup: BackupFile): Promise<void> {
   await restoreBackup(backup);
-  meta = backup.meta;
   settings.set(backup.settings ?? { fallbackCycleLength: 28 });
-  lock();
+  if (backup.meta) {
+    meta = backup.meta;
+    setEncrypted(true);
+    lock();
+  } else {
+    meta = null;
+    dek = null;
+    setEncrypted(false);
+    await loadEntries();
+    screen.set('app');
+  }
 }
 
 export async function deleteEverything(): Promise<void> {
   await wipeEverything();
   dek = null;
   meta = null;
+  setEncrypted(true);
   entries.set([]);
   screen.set('onboarding');
 }

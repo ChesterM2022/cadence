@@ -3,18 +3,24 @@
     exportBackup,
     importBackup,
     changeVaultPassphrase,
+    addPassphrase,
     deleteEverything,
     lock,
+    encryptedMode,
   } from '../lib/store';
   import { todayISO } from '../lib/dates';
   import { MEDICAL_DISCLAIMER } from '../lib/phaseContent';
   import PasswordField from '../lib/components/PasswordField.svelte';
+  import RecoveryCode from '../lib/components/RecoveryCode.svelte';
 
   let msg = $state('');
   let showChangePass = $state(false);
+  let showAddPass = $state(false);
   let newPass = $state('');
   let confirmPass = $state('');
   let passErr = $state('');
+  let addRecovery = $state('');
+  let addSaved = $state(false);
   let confirmingDelete = $state(false);
 
   function flash(text: string) {
@@ -31,7 +37,7 @@
     a.download = `cadence-backup-${todayISO()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    flash('Encrypted backup downloaded.');
+    flash($encryptedMode ? 'Encrypted backup downloaded.' : 'Backup downloaded.');
   }
 
   async function onImportFile(e: Event) {
@@ -61,6 +67,23 @@
     flash('Passphrase changed. Your recovery code is unchanged.');
   }
 
+  async function saveAddPass() {
+    passErr = '';
+    if (newPass.length < 8 || newPass !== confirmPass) {
+      passErr = 'Passphrases must match and be at least 8 characters.';
+      return;
+    }
+    addRecovery = await addPassphrase(newPass);
+    newPass = confirmPass = '';
+    showAddPass = false;
+  }
+
+  function finishAdd() {
+    addRecovery = '';
+    addSaved = false;
+    flash('Passphrase added. Your data is now encrypted.');
+  }
+
   async function confirmDelete() {
     await deleteEverything();
   }
@@ -73,10 +96,17 @@
   <div class="card block">
     <h2>Backup</h2>
     <p class="small muted">
-      Your data lives only in this browser. Save an encrypted backup file to keep it safe or move it
-      to another device. The file is useless without your passphrase or recovery code.
+      Your data lives only in this browser. Save a backup file to keep it safe or move it to another
+      device.
+      {#if $encryptedMode}
+        The file is encrypted — useless without your passphrase or recovery code.
+      {:else}
+        Heads up: without a passphrase, this backup file is <strong>not encrypted</strong>.
+      {/if}
     </p>
-    <button class="btn" onclick={doExport}>Download encrypted backup</button>
+    <button class="btn" onclick={doExport}>
+      {$encryptedMode ? 'Download encrypted backup' : 'Download backup'}
+    </button>
     <label class="btn btn-quiet importbtn">
       Restore from a backup file
       <input type="file" accept="application/json,.json" onchange={onImportFile} hidden />
@@ -90,7 +120,11 @@
       nothing is ever sent anywhere.
     </p>
     <ul class="how small">
-      <li>Your entries are saved in your browser's own storage, <strong>encrypted</strong>. Only your passphrase or recovery code can unlock them.</li>
+      {#if $encryptedMode}
+        <li>Your entries are saved in your browser's own storage, <strong>encrypted</strong>. Only your passphrase or recovery code can unlock them.</li>
+      {:else}
+        <li>Your entries are saved in your browser's own storage, <strong>unencrypted</strong>. Add a passphrase (under Security) to encrypt them.</li>
+      {/if}
       <li><strong>No cookies, no tracking, no cloud.</strong> The app can't even reach the internet once it's loaded.</li>
       <li>Because it lives in this one browser on this one device, it doesn't sync automatically. Use <strong>Backup</strong> above to keep a copy or move it to another device.</li>
       <li>Clearing your browser's data — or using a private window — will erase it, so keep a backup somewhere safe.</li>
@@ -99,18 +133,48 @@
 
   <div class="card block">
     <h2>Security</h2>
-    {#if !showChangePass}
-      <button class="btn btn-quiet" onclick={() => (showChangePass = true)}>Change passphrase</button>
-    {:else}
-      <PasswordField bind:value={newPass} label="New passphrase" />
-      <PasswordField bind:value={confirmPass} label="Confirm new passphrase" />
+    {#if addRecovery}
+      <!-- Shown once right after adding a passphrase — takes priority over the
+           mode split below, since the mode has just flipped to encrypted. -->
+      <p class="small muted">
+        Done — your data is now encrypted. Save this recovery code somewhere safe; it's the only
+        other way in if you forget your passphrase.
+      </p>
+      <RecoveryCode code={addRecovery} />
+      <label class="ack">
+        <input type="checkbox" bind:checked={addSaved} />
+        <span>I've saved my recovery code.</span>
+      </label>
+      <button class="btn" onclick={finishAdd} disabled={!addSaved}>Done</button>
+    {:else if $encryptedMode}
+      {#if !showChangePass}
+        <button class="btn btn-quiet" onclick={() => (showChangePass = true)}>Change passphrase</button>
+      {:else}
+        <PasswordField bind:value={newPass} label="New passphrase" />
+        <PasswordField bind:value={confirmPass} label="Confirm new passphrase" />
+        {#if passErr}<p class="error">{passErr}</p>{/if}
+        <div class="row">
+          <button class="btn" onclick={saveNewPass}>Save</button>
+          <button class="btn btn-quiet" onclick={() => (showChangePass = false)}>Cancel</button>
+        </div>
+      {/if}
+      <button class="btn btn-ghost lockbtn" onclick={lock}>Lock now</button>
+    {:else if showAddPass}
+      <p class="small muted">
+        A passphrase encrypts everything you've logged. Because there's no cloud it can't be reset —
+        you'll get a one-time recovery code as a backup.
+      </p>
+      <PasswordField bind:value={newPass} label="Passphrase" placeholder="at least 8 characters" />
+      <PasswordField bind:value={confirmPass} label="Confirm passphrase" />
       {#if passErr}<p class="error">{passErr}</p>{/if}
       <div class="row">
-        <button class="btn" onclick={saveNewPass}>Save</button>
-        <button class="btn btn-quiet" onclick={() => (showChangePass = false)}>Cancel</button>
+        <button class="btn" onclick={saveAddPass}>Add passphrase</button>
+        <button class="btn btn-quiet" onclick={() => { showAddPass = false; newPass = confirmPass = ''; passErr = ''; }}>Cancel</button>
       </div>
+    {:else}
+      <p class="small muted">Your data isn't encrypted on this device. Add a passphrase to protect it.</p>
+      <button class="btn" onclick={() => (showAddPass = true)}>Add a passphrase</button>
     {/if}
-    <button class="btn btn-ghost lockbtn" onclick={lock}>Lock now</button>
   </div>
 
   <div class="card block danger">
@@ -161,6 +225,16 @@
   }
   .importbtn {
     cursor: pointer;
+  }
+  .ack {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    margin: 0.9rem 0;
+    font-size: 0.9rem;
+  }
+  .ack input {
+    margin-top: 0.2rem;
   }
   .row {
     display: flex;

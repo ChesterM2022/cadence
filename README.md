@@ -32,11 +32,13 @@ not even the people who built it — that can see your data.
 
 ## Privacy in one paragraph
 
-Your logs are encrypted with **AES-256-GCM** using a key that only exists after you
-enter your passphrase. That key is never stored. When you set up Cadence you also get
-a one-time **recovery code** as a backup way in. If you lose both, your data is
-unrecoverable — by design. See [PRIVACY.md](./PRIVACY.md) and [SECURITY.md](./SECURITY.md)
-for the full explanation and threat model.
+With a passphrase (recommended), your logs are encrypted with **AES-256-GCM** using a
+key that only exists after you enter it. That key is never stored, and you also get a
+one-time **recovery code** as a backup way in; lose both and the data is unrecoverable
+by design. A passphrase is **optional** — you can run Cadence without one, in which case
+data is stored unencrypted on your device (still no cloud, still no account), and you can
+add a passphrase later from Settings to encrypt everything. See [PRIVACY.md](./PRIVACY.md)
+and [SECURITY.md](./SECURITY.md) for the full explanation and threat model.
 
 ## How your data is stored
 

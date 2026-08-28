@@ -16,10 +16,11 @@ plain language, exactly what that means.
 
 All data lives in your browser's local storage (IndexedDB) on your device:
 
-- **Your daily logs** (period flow, energy, cramps, sleep, mood, notes) are stored
-  only as **encrypted ciphertext**. The calendar date of each entry is kept in the
-  clear so the app can find days quickly, but the *contents* of each day are
-  encrypted.
+- **Your daily logs** (period flow, energy, cramps, sleep, mood, notes). With a
+  passphrase set (recommended), these are stored only as **encrypted ciphertext**.
+  A passphrase is optional; without one, entries are stored in the clear on your
+  device (you can add a passphrase later to encrypt them). Either way, the calendar
+  date of each entry is kept unencrypted so the app can find days quickly.
 - **Vault metadata** — the random salts and the wrapped copies of your encryption
   key. These contain no secrets and reveal nothing without your passphrase or
   recovery code.
