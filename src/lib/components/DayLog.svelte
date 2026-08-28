@@ -5,6 +5,8 @@
   let { date }: { date: string } = $props();
 
   let entry = $state<DayEntry>({ date: '' });
+  let saved = $state(false);
+  let savedTimer: ReturnType<typeof setTimeout>;
 
   // Load (and reload if the date ever changes) the stored entry for this day.
   $effect(() => {
@@ -13,6 +15,9 @@
 
   function persist() {
     void saveDay({ ...entry, date });
+    saved = true;
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(() => (saved = false), 1800);
   }
 
   function setFlow(v: Flow) {
@@ -100,6 +105,13 @@
       placeholder="Anything you want to remember about today…"
     ></textarea>
   </div>
+
+  <div class="saverow">
+    <button class="btn btn-quiet" onclick={persist}>Save</button>
+    <span class="savedmsg" class:show={saved} aria-live="polite">
+      {saved ? 'Saved ✓' : 'Saves automatically'}
+    </span>
+  </div>
 </div>
 
 <style>
@@ -130,5 +142,24 @@
   textarea:focus {
     outline: 2px solid var(--clay);
     outline-offset: 1px;
+  }
+  .saverow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .saverow .btn {
+    width: auto;
+    padding: 0.6rem 1.4rem;
+  }
+  .savedmsg {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+  }
+  .savedmsg.show {
+    color: var(--clay-dark);
   }
 </style>

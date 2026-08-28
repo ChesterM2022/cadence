@@ -38,7 +38,10 @@
 
 <style>
   .main {
-    flex: 1;
+    /* Pin the shell to the viewport so only .content scrolls and the tab bar
+       stays visible at any scroll position (not just at the bottom). */
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -54,6 +57,7 @@
     border-top: 1px solid var(--border);
     background: var(--surface);
     padding-bottom: env(safe-area-inset-bottom, 0);
+    flex-shrink: 0;
   }
   .tab {
     display: flex;
