@@ -20,6 +20,7 @@ import {
 import {
   getVaultMeta,
   saveVaultMeta,
+  deleteVaultMeta,
   getSettings,
   saveSettings,
   getMode,
@@ -244,6 +245,21 @@ export async function changeVaultPassphrase(newPassphrase: string): Promise<void
   if (!meta || !dek) throw new Error('Locked.');
   meta = await changePassphrase(meta, dek, newPassphrase);
   await saveVaultMeta(meta);
+}
+
+/**
+ * Remove the passphrase: decrypt every entry back to plaintext, drop the vault,
+ * and switch to open mode. Data is then stored unencrypted on this device.
+ */
+export async function removePassphrase(): Promise<void> {
+  if (!encrypted || !dek) throw new Error('No passphrase set.');
+  for (const e of get(entries)) {
+    await putStoredEntry({ date: e.date, plain: e }); // overwrites the ciphertext record
+  }
+  await deleteVaultMeta();
+  meta = null;
+  dek = null;
+  setEncrypted(false);
 }
 
 export async function exportBackup(): Promise<BackupFile> {

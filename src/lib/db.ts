@@ -77,6 +77,10 @@ export async function saveVaultMeta(meta: VaultMeta): Promise<void> {
   await (await db()).put(META_STORE, meta, VAULT_KEY);
 }
 
+export async function deleteVaultMeta(): Promise<void> {
+  await (await db()).delete(META_STORE, VAULT_KEY);
+}
+
 export async function hasVault(): Promise<boolean> {
   return (await getVaultMeta()) !== undefined;
 }

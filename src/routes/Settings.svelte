@@ -4,6 +4,7 @@
     importBackup,
     changeVaultPassphrase,
     addPassphrase,
+    removePassphrase,
     deleteEverything,
     lock,
     encryptedMode,
@@ -21,6 +22,7 @@
   let passErr = $state('');
   let addRecovery = $state('');
   let addSaved = $state(false);
+  let confirmingRemove = $state(false);
   let confirmingDelete = $state(false);
 
   function flash(text: string) {
@@ -82,6 +84,13 @@
     addRecovery = '';
     addSaved = false;
     flash('Passphrase added. Your data is now encrypted.');
+  }
+
+  async function doRemovePassphrase() {
+    await removePassphrase();
+    confirmingRemove = false;
+    showChangePass = false;
+    flash('Passphrase removed. Your data is no longer encrypted.');
   }
 
   async function confirmDelete() {
@@ -159,6 +168,22 @@
         </div>
       {/if}
       <button class="btn btn-ghost lockbtn" onclick={lock}>Lock now</button>
+      {#if confirmingRemove}
+        <div class="removebox">
+          <p class="small">
+            <strong>Remove your passphrase?</strong> Your data will be decrypted and stored
+            <strong>unencrypted</strong> on this device. You can add one again anytime.
+          </p>
+          <div class="row">
+            <button class="btn del" onclick={doRemovePassphrase}>Remove passphrase</button>
+            <button class="btn btn-quiet" onclick={() => (confirmingRemove = false)}>Keep it</button>
+          </div>
+        </div>
+      {:else}
+        <button class="btn-ghost small removebtn" onclick={() => (confirmingRemove = true)}>
+          Remove passphrase
+        </button>
+      {/if}
     {:else if showAddPass}
       <p class="small muted">
         A passphrase encrypts everything you've logged. Because there's no cloud it can't be reset —
@@ -195,7 +220,16 @@
   </div>
 
   <p class="disclaimer small muted">{MEDICAL_DISCLAIMER}</p>
-  <p class="ver small muted">Cadence · local-first · open source</p>
+
+  <div class="about small muted">
+    <p>Cadence v0.1 · local-first · open source</p>
+    <p>Updates arrive automatically — just reopen the app to get the latest.</p>
+    <p>
+      <a href="https://github.com/ChesterM2022/cadence" target="_blank" rel="noopener noreferrer">
+        View the code on GitHub →
+      </a>
+    </p>
+  </div>
 </section>
 
 <style>
@@ -248,6 +282,14 @@
     margin: 0.75rem auto 0;
     display: block;
   }
+  .removebtn {
+    display: block;
+    margin: 0.5rem auto 0;
+    color: var(--text-muted);
+  }
+  .removebox {
+    margin-top: 0.75rem;
+  }
   .danger {
     border-color: #e6c4b8;
   }
@@ -260,8 +302,20 @@
   .disclaimer {
     margin-top: 1.5rem;
   }
-  .ver {
+  .about {
     text-align: center;
-    margin-top: 0.5rem;
+    margin-top: 1rem;
+    line-height: 1.6;
+  }
+  .about p {
+    margin: 0.15rem 0;
+  }
+  .about a {
+    color: var(--clay-dark);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .about a:hover {
+    text-decoration: underline;
   }
 </style>
