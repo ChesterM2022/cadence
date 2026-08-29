@@ -4,6 +4,12 @@
   import History from './History.svelte';
   import Settings from './Settings.svelte';
   import { activeTab, type Tab } from '../lib/store';
+  import { showWhatsNew, markSeen } from '../lib/updates';
+
+  function openWhatsNew() {
+    activeTab.set('settings');
+    markSeen();
+  }
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'today', label: 'Today', icon: '◉' },
@@ -14,6 +20,12 @@
 </script>
 
 <div class="main">
+  {#if $showWhatsNew}
+    <div class="whatsnew">
+      <button class="wn-link" onclick={openWhatsNew}>✨ Cadence updated — see what's new</button>
+      <button class="wn-close" aria-label="Dismiss" onclick={markSeen}>×</button>
+    </div>
+  {/if}
   <div class="content">
     {#if $activeTab === 'today'}
       <Today />
@@ -50,6 +62,28 @@
     flex: 1;
     overflow-y: auto;
     padding: 1.25rem 1.1rem 1.5rem;
+  }
+  .whatsnew {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--clay-soft);
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem 0.9rem;
+    flex-shrink: 0;
+  }
+  .wn-link {
+    flex: 1;
+    text-align: left;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--clay-dark);
+  }
+  .wn-close {
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--text-muted);
+    padding: 0 0.3rem;
   }
   .tabbar {
     display: grid;

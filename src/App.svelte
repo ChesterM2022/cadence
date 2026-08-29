@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { screen, init } from './lib/store';
+  import { initUpdates } from './lib/updates';
   import Onboarding from './routes/Onboarding.svelte';
   import Lock from './routes/Lock.svelte';
   import Main from './routes/Main.svelte';
 
   onMount(() => {
     void init();
+    initUpdates();
   });
 </script>
 

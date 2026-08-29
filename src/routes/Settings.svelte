@@ -9,10 +9,16 @@
     lock,
     encryptedMode,
   } from '../lib/store';
+  import { onMount } from 'svelte';
   import { todayISO } from '../lib/dates';
   import { MEDICAL_DISCLAIMER } from '../lib/phaseContent';
+  import { CHANGELOG, APP_VERSION } from '../lib/changelog';
+  import { markSeen } from '../lib/updates';
   import PasswordField from '../lib/components/PasswordField.svelte';
   import RecoveryCode from '../lib/components/RecoveryCode.svelte';
+
+  // Visiting Settings counts as seeing the latest changes.
+  onMount(() => markSeen());
 
   let msg = $state('');
   let showChangePass = $state(false);
@@ -101,6 +107,21 @@
 <section>
   <h1 class="title">Settings</h1>
   {#if msg}<div class="flash">{msg}</div>{/if}
+
+  <div class="card block">
+    <h2>What's new</h2>
+    {#each CHANGELOG as entry (entry.version)}
+      <div class="wn-entry">
+        <div class="wn-head">
+          <strong>{entry.title}</strong>
+          <span class="wn-ver small muted">v{entry.version}</span>
+        </div>
+        <ul class="how small">
+          {#each entry.items as item}<li>{item}</li>{/each}
+        </ul>
+      </div>
+    {/each}
+  </div>
 
   <div class="card block">
     <h2>Backup</h2>
@@ -222,7 +243,7 @@
   <p class="disclaimer small muted">{MEDICAL_DISCLAIMER}</p>
 
   <div class="about small muted">
-    <p>Cadence v0.1 · local-first · open source</p>
+    <p>Cadence v{APP_VERSION} · local-first · open source</p>
     <p>Updates arrive automatically — just reopen the app to get the latest.</p>
     <p>
       <a href="https://github.com/ChesterM2022/cadence" target="_blank" rel="noopener noreferrer">
@@ -247,6 +268,17 @@
     padding-left: 1.1rem;
     color: var(--text-muted);
     line-height: 1.5;
+  }
+  .wn-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .wn-entry + .wn-entry {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
   }
   .how li {
     margin-bottom: 0.5rem;
