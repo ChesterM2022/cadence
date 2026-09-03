@@ -1,10 +1,9 @@
 /*
  * Cadence offline service worker.
  *
- * Privacy-critical property: this worker ONLY ever touches same-origin GET
- * requests. It never contacts any other host — there are none to contact. It
- * exists purely to make the app work with the network off, which is also the
- * strongest privacy guarantee: once installed, Cadence cannot phone home.
+ * Privacy-critical property: this worker ONLY ever handles same-origin GET
+ * requests. Analytics requests bypass it and are never cached. The app shell
+ * and all cycle data remain fully local and continue to work offline.
  *
  * Strategy:
  *   - navigations (the HTML document): network-first, fall back to cache, so a

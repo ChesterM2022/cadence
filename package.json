@@ -2,7 +2,7 @@
   "name": "cadence",
   "version": "0.1.0",
   "private": true,
-  "description": "A local-first, private menstrual cycle phase-awareness app. Your data never leaves your device.",
+  "description": "A local-first, private menstrual cycle phase-awareness app. Your cycle data never leaves your device.",
   "license": "MIT",
   "type": "module",
   "scripts": {

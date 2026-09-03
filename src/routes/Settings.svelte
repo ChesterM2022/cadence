@@ -18,6 +18,7 @@
   import { markSeen } from '../lib/updates';
   import PasswordField from '../lib/components/PasswordField.svelte';
   import RecoveryCode from '../lib/components/RecoveryCode.svelte';
+  import { analyticsConsent, setAnalyticsConsent } from '../lib/analytics';
 
   // Visiting Settings counts as seeing the latest changes.
   onMount(() => markSeen());
@@ -159,7 +160,7 @@
     <h2>How your data is stored</h2>
     <p class="small muted">
       Everything you log stays in this browser, on this device. There's no account and no server —
-      nothing is ever sent anywhere.
+      your cycle data is never sent anywhere.
     </p>
     <ul class="how small">
       {#if $encryptedMode}
@@ -167,10 +168,28 @@
       {:else}
         <li>Your entries are saved in your browser's own storage, <strong>unencrypted</strong>. Add a passphrase (under Security) to encrypt them.</li>
       {/if}
-      <li><strong>No cookies, no tracking, no cloud.</strong> The app can't even reach the internet once it's loaded.</li>
+      <li><strong>No health-data tracking or cloud sync.</strong> Aggregate traffic and performance are measured without your cycle data.</li>
       <li>Because it lives in this one browser on this one device, it doesn't sync automatically. Use <strong>Backup</strong> above to keep a copy or move it to another device.</li>
       <li>Clearing your browser's data — or using a private window — will erase it, so keep a backup somewhere safe.</li>
     </ul>
+  </div>
+
+  <div class="card block">
+    <h2>Anonymous analytics</h2>
+    <p class="small muted">
+      Cloudflare measures aggregate visits and performance. If you allow Google Analytics, Cadence
+      also sends page views. Neither receives cycle dates, symptoms, notes, profile names, phase, or
+      anything else you log.
+    </p>
+    <label class="analytics-toggle small">
+      <input
+        type="checkbox"
+        checked={$analyticsConsent === 'granted'}
+        onchange={(event) =>
+          setAnalyticsConsent((event.currentTarget as HTMLInputElement).checked ? 'granted' : 'denied')}
+      />
+      <span>Share anonymous page views with Google Analytics</span>
+    </label>
   </div>
 
   <div class="card block">
@@ -325,6 +344,14 @@
     align-items: flex-start;
     margin: 0.9rem 0;
     font-size: 0.9rem;
+  }
+  .analytics-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .analytics-toggle input {
+    margin-top: 0.2rem;
   }
   .ack input {
     margin-top: 0.2rem;

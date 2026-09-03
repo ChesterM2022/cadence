@@ -7,8 +7,8 @@ plain language, exactly what that means.
 
 - Everything you log stays on the device you logged it on.
 - It is encrypted at rest with a key derived from your passphrase.
-- The app makes **no network requests** after it loads. There is no server to send
-  data to, no account, and no analytics.
+- There is no account or health-data server. Cloudflare measures aggregate traffic and
+  performance. Google Analytics receives page views only if you explicitly opt in.
 - Nobody — not the people who built Cadence, not a hosting provider, not us — can
   read your data. There is no back door, because there is no back end.
 
@@ -31,13 +31,20 @@ That's the whole footprint. If you clear your browser's data for the site, or us
 
 ## What leaves your device
 
-Nothing. Cadence never transmits your data anywhere. The only network activity ever
-is the one-time download of the app's own code when you first open or install it —
-the same as loading any web page. After that, you can turn off your network entirely
-and the app keeps working.
+Nothing you log leaves your device. Cadence never transmits cycle dates, flow, energy,
+cramps, sleep, mood, notes, profile names, predicted dates, phase, or encryption data.
 
-You can confirm this: open your browser's developer tools, go to the Network tab, and
-use the app. You will see no requests being made as you log or browse your data.
+Cloudflare Web Analytics receives aggregate visit and performance information. It is
+used to understand whether the site is working and broadly how it is reached. Google
+Analytics is optional and does not load until you choose “Allow”; when enabled it
+receives standard page views only. Google advertising storage, advertising user data,
+personalization, Signals, and enhanced measurement are disabled.
+
+Your analytics choice is saved in this browser and can be changed in Settings. The
+app itself continues to work offline regardless of that choice.
+
+You can confirm this in your browser's Network tab: analytics requests contain no
+values from anything you log or anything Cadence derives from those logs.
 
 ## Backups are your choice
 

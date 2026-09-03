@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { screen, init } from './lib/store';
   import { initUpdates } from './lib/updates';
+  import { initAnalytics } from './lib/analytics';
+  import AnalyticsConsent from './lib/components/AnalyticsConsent.svelte';
   import Onboarding from './routes/Onboarding.svelte';
   import Picker from './routes/Picker.svelte';
   import Lock from './routes/Lock.svelte';
@@ -10,6 +12,7 @@
   onMount(() => {
     void init();
     initUpdates();
+    initAnalytics();
   });
 </script>
 
@@ -26,6 +29,8 @@
 {:else}
   <Main />
 {/if}
+
+<AnalyticsConsent />
 
 <style>
   .splash {

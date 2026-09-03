@@ -62,10 +62,10 @@
         body — explained clearly, like a scientist would.
       </p>
       <div class="promise card">
-        <strong>Your data never leaves this device.</strong>
+        <strong>Your cycle data never leaves this device.</strong>
         <p class="small muted">
           Everything you log stays on your phone or computer. There is no account, no cloud, and no
-          company — not even us — that can see it.
+          company — not even us — that can see it. Optional analytics never include what you log.
         </p>
       </div>
       <button class="btn" onclick={() => (step = 1)}>Get started</button>

@@ -4,7 +4,7 @@
  * changes (see updates.ts); the full list lives in Settings.
  */
 
-export const APP_VERSION = '0.3';
+export const APP_VERSION = '0.4';
 
 export interface ChangelogEntry {
   version: string;
@@ -14,6 +14,15 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '0.4',
+    date: '2026-09-03',
+    title: 'Clearer privacy choices',
+    items: [
+      'Added a clear choice for optional, anonymous Google Analytics page views.',
+      'Clarified that traffic analytics never include cycle dates, symptoms, notes, profile names, or phase information.',
+    ],
+  },
   {
     version: '0.3',
     date: '2026-09-03',

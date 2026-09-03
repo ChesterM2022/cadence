@@ -3,17 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Privacy is enforced, not just promised: this CSP forbids the page from
-         contacting any origin but its own. There are no external requests to
-         make, and now the browser guarantees there can't be. -->
+    <!-- External connections are restricted to the two disclosed analytics
+         providers. Google Analytics is loaded only after explicit opt-in. -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'"
     />
     <meta name="theme-color" content="#c96f4a" />
     <meta
       name="description"
-      content="Cadence — understand where you are in your cycle, explained clearly and without judgment. Your data never leaves your device."
+      content="Cadence — understand where you are in your cycle, explained clearly and without judgment. Your cycle data never leaves your device."
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />

@@ -1,7 +1,7 @@
 {
   "name": "Cadence — private cycle tracking",
   "short_name": "Cadence",
-  "description": "Understand where you are in your cycle, explained clearly and without judgment. Your data never leaves your device.",
+  "description": "Understand where you are in your cycle, explained clearly and without judgment. Your cycle data never leaves your device.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

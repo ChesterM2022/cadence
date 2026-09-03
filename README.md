@@ -1,6 +1,6 @@
 # Cadence
 
-**Understand where you are in your cycle — explained clearly, and without judgment. Your data never leaves your device.**
+**Understand where you are in your cycle — explained clearly, and without judgment. Your cycle data never leaves your device.**
 
 Cadence is a private, local-first menstrual cycle tracker. Most period apps either
 talk down to you or quietly send your most personal data to the cloud. Cadence does
@@ -22,9 +22,9 @@ not even the people who built it — that can see your data.
   understanding. Cadence tells you which phase you're in (menstrual, follicular,
   ovulatory, luteal) and explains the physiology plainly, with gently-hedged notes
   and no "shoulds."
-- **Truly private by architecture.** Everything is encrypted at rest with a key
-  derived from your passphrase. The app makes **zero network requests** once loaded —
-  you can verify this yourself in your browser's Network tab.
+- **Truly private by architecture.** Everything you log stays on-device and can be
+  encrypted at rest with a key derived from your passphrase. Aggregate traffic is
+  measured separately and never includes cycle data.
 - **Yours to keep.** Encrypted backup export/import lets you move your history
   between devices without any cloud in the middle.
 - **Open and minimal.** A small, dependency-light codebase (one runtime dependency)
@@ -42,8 +42,8 @@ and [SECURITY.md](./SECURITY.md) for the full explanation and threat model.
 
 ## How your data is stored
 
-No cookies, no account, no server. Cadence uses three on-device browser
-mechanisms and nothing else:
+No account and no health-data server. Cadence uses three on-device browser
+mechanisms for app data:
 
 - **IndexedDB — your data.** Your daily logs live in your browser's own
   database, on your device's disk, as **encrypted ciphertext**. Alongside them
@@ -60,12 +60,13 @@ Storage is scoped to one origin, one browser, one device — so it does **not**
 sync across devices (that's what the encrypted backup export is for), and
 clearing browser data or using a private window will erase it.
 
-## Verify the privacy claim yourself
+## Verify the privacy boundary yourself
 
 1. Open the app, then open your browser's developer tools → **Network** tab.
 2. Use the app — onboard, log a day, navigate around.
-3. After the initial page and script load, you'll see **no further network requests**.
-   Nothing is sent anywhere, because there's nowhere for it to be sent.
+3. You may see requests to Cloudflare Web Analytics and, only if you opted in, Google
+   Analytics. Inspect their payloads: they contain traffic/page-view metadata, never
+   cycle dates, symptoms, notes, profile names, phase, or other logged data.
 
 ## Features
 
@@ -85,7 +86,7 @@ clearing browser data or using a private window will erase it.
   for all encryption (no third-party crypto code)
 - IndexedDB (via [`idb`](https://github.com/jakearchibald/idb)) for local, encrypted storage
 - A hand-written service worker for offline support
-- No backend. No analytics. No external requests.
+- No health-data backend. Privacy-first aggregate analytics; Google page views are opt-in.
 
 ## Develop
 
