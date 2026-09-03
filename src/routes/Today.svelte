@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cycle, goToLearn } from '../lib/store';
+  import { cycle, goToLearn, activeProfile, switchProfile } from '../lib/store';
   import { todayISO, formatDate } from '../lib/dates';
   import { PHASE_CONTENT, CONTEXTUAL_NOTE, positionHeadline } from '../lib/phaseContent';
   import { phasePosition } from '../lib/phase';
@@ -24,6 +24,11 @@
 
 <section>
   <header class="head">
+    <button class="profilebar" onclick={switchProfile} title="Switch profile">
+      <span class="pavatar">{($activeProfile?.name ?? 'M').slice(0, 1).toUpperCase()}</span>
+      <span class="pname">{$activeProfile?.name ?? 'Me'}</span>
+      <span class="pswitch" aria-hidden="true">⇄</span>
+    </button>
     <span class="date muted small">{formatDate(today)}</span>
   </header>
 
@@ -72,8 +77,44 @@
 <style>
   .head {
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .profilebar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.7rem 0.3rem 0.3rem;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .profilebar:hover {
+    border-color: var(--clay);
+  }
+  .pavatar {
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: var(--clay);
+    color: #fff;
+    font-weight: 650;
+    font-size: 0.8rem;
+  }
+  .pname {
+    font-weight: 600;
+    font-size: 0.9rem;
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pswitch {
+    color: var(--text-muted);
+    font-size: 0.95rem;
   }
   .phase-card {
     border-radius: var(--radius);

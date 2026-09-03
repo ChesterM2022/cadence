@@ -20,7 +20,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: 'Profiles',
     items: [
       'More than one person can now use Cadence in the same browser — each with their own private, separate profile.',
-      'A profile picker lets you choose who’s using it; switch anytime from Settings.',
+      'A profile picker lets you choose who’s using it; switch anytime from the bar at the top of Today or from Settings.',
       'Each profile is independently open or passphrase-protected — your data stays sealed from the others.',
     ],
   },
