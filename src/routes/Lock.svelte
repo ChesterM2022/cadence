@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { unlockWithPass, unlockWithCode } from '../lib/store';
+  import { unlockWithPass, unlockWithCode, activeProfile, switchProfile } from '../lib/store';
   import PasswordField from '../lib/components/PasswordField.svelte';
 
   let mode = $state<'passphrase' | 'recovery'>('passphrase');
@@ -28,7 +28,7 @@
 
 <main class="lock">
   <div class="mark">Cadence</div>
-  <h1>Welcome back</h1>
+  <h1>Welcome back{$activeProfile ? `, ${$activeProfile.name}` : ''}</h1>
   <p class="muted">Your data is locked on this device. Enter your {mode === 'passphrase' ? 'passphrase' : 'recovery code'} to open it.</p>
 
   <form onsubmit={(e) => { e.preventDefault(); void unlock(); }}>
@@ -50,6 +50,8 @@
   >
     {mode === 'passphrase' ? 'Use my recovery code instead' : 'Use my passphrase instead'}
   </button>
+
+  <button class="btn-ghost small switch" onclick={switchProfile}>Not you? Switch profile</button>
 </main>
 
 <style>

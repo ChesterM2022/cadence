@@ -5,9 +5,11 @@
     changeVaultPassphrase,
     addPassphrase,
     removePassphrase,
-    deleteEverything,
+    deleteThisProfile,
     lock,
     encryptedMode,
+    activeProfile,
+    switchProfile,
   } from '../lib/store';
   import { onMount } from 'svelte';
   import { todayISO } from '../lib/dates';
@@ -100,13 +102,23 @@
   }
 
   async function confirmDelete() {
-    await deleteEverything();
+    await deleteThisProfile();
   }
 </script>
 
 <section>
   <h1 class="title">Settings</h1>
   {#if msg}<div class="flash">{msg}</div>{/if}
+
+  <div class="card block profilecard">
+    <div class="prow">
+      <div>
+        <span class="small muted">Profile</span>
+        <div class="pname">{$activeProfile?.name ?? 'Me'}</div>
+      </div>
+      <button class="btn btn-quiet switchbtn" onclick={switchProfile}>Switch profile</button>
+    </div>
+  </div>
 
   <div class="card block">
     <h2>What's new</h2>
@@ -224,17 +236,18 @@
   </div>
 
   <div class="card block danger">
-    <h2>Delete everything</h2>
+    <h2>Delete this profile</h2>
     <p class="small muted">
-      Permanently erases all your data from this device. This cannot be undone, and without a backup
-      it cannot be recovered.
+      Permanently erases <strong>{$activeProfile?.name ?? 'this profile'}</strong> and all its data
+      from this device. Other profiles are untouched. This cannot be undone, and without a backup it
+      cannot be recovered.
     </p>
     {#if !confirmingDelete}
-      <button class="btn del" onclick={() => (confirmingDelete = true)}>Delete all my data</button>
+      <button class="btn del" onclick={() => (confirmingDelete = true)}>Delete this profile</button>
     {:else}
       <p class="small"><strong>Are you sure? This is permanent.</strong></p>
       <div class="row">
-        <button class="btn del" onclick={confirmDelete}>Yes, delete everything</button>
+        <button class="btn del" onclick={confirmDelete}>Yes, delete it</button>
         <button class="btn btn-quiet" onclick={() => (confirmingDelete = false)}>Keep my data</button>
       </div>
     {/if}
@@ -259,6 +272,20 @@
   }
   .block {
     margin-bottom: 1rem;
+  }
+  .prow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .prow .pname {
+    font-size: 1.15rem;
+    font-weight: 650;
+  }
+  .switchbtn {
+    width: auto;
+    padding: 0.6rem 1rem;
   }
   .block h2 {
     font-size: 1.05rem;

@@ -5,6 +5,7 @@
   import PasswordField from '../lib/components/PasswordField.svelte';
 
   let step = $state(0);
+  let name = $state('');
   let lastPeriod = $state(todayISO());
   let cycleLength = $state(28);
   let passphrase = $state('');
@@ -25,6 +26,7 @@
     busy = true;
     try {
       recoveryCode = await completeOnboarding({
+        name,
         lastPeriodStart: lastPeriod,
         cycleLength,
         passphrase,
@@ -41,7 +43,7 @@
     error = '';
     busy = true;
     try {
-      await completeOnboardingOpen({ lastPeriodStart: lastPeriod, cycleLength });
+      await completeOnboardingOpen({ name, lastPeriodStart: lastPeriod, cycleLength });
     } catch (e) {
       error = e instanceof Error ? e.message : 'Something went wrong.';
     } finally {
@@ -72,6 +74,10 @@
     <div class="step">
       <h2>A little about your cycle</h2>
       <p class="muted small">This gives Cadence a starting point. It refines itself as you log.</p>
+      <label class="field">
+        <span>What should we call this profile?</span>
+        <input type="text" bind:value={name} placeholder="e.g. your name" maxlength="24" />
+      </label>
       <label class="field">
         <span>When did your last period start?</span>
         <input type="date" bind:value={lastPeriod} max={todayISO()} />

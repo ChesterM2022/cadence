@@ -1,10 +1,9 @@
 /**
  * Cadence application state.
  *
- * The Data Encryption Key lives ONLY in this module's memory while the app is
- * unlocked; it is never written to disk and is dropped on lock. All persistence
- * goes through `db.ts` as ciphertext. This module is the single place that holds
- * decrypted data in memory.
+ * Supports multiple profiles on one device. The active profile's decryption key
+ * lives ONLY in memory while unlocked and is dropped on lock or profile switch.
+ * All persistence goes through db.ts, namespaced by the active profile id.
  */
 
 import { writable, get } from 'svelte/store';
@@ -18,20 +17,24 @@ import {
   type VaultMeta,
 } from './crypto';
 import {
+  getProfiles,
+  saveProfiles,
   getVaultMeta,
   saveVaultMeta,
   deleteVaultMeta,
   getSettings,
   saveSettings,
-  getMode,
   getAllStoredEntries,
   putStoredEntry,
   deleteStoredEntry,
+  deleteProfileData,
   buildBackup,
   restoreBackup,
   wipeEverything,
   type Settings,
   type BackupFile,
+  type ProfileMeta,
+  type Registry,
 } from './db';
 import {
   computeCycleStats,
@@ -47,22 +50,23 @@ import {
 import { hasAnyData, type DayEntry } from './types';
 import { todayISO } from './dates';
 
-export type Screen = 'loading' | 'onboarding' | 'locked' | 'app';
+export type Screen = 'loading' | 'onboarding' | 'picker' | 'locked' | 'app';
 export type Tab = 'today' | 'history' | 'learn' | 'settings';
 
 export const screen = writable<Screen>('loading');
 
-/** Which main tab is showing, and (optionally) a phase to open in Learn. */
 export const activeTab = writable<Tab>('today');
 export const learnFocus = writable<Phase | null>(null);
 
-/** Jump to the Learn tab with a specific phase expanded. */
 export function goToLearn(phase: Phase): void {
   learnFocus.set(phase);
   activeTab.set('learn');
 }
+
 export const entries = writable<DayEntry[]>([]);
 export const settings = writable<Settings>({ fallbackCycleLength: 28 });
+export const profiles = writable<ProfileMeta[]>([]);
+export const activeProfile = writable<ProfileMeta | null>(null);
 
 export interface CycleView {
   stats: CycleStats;
@@ -78,39 +82,76 @@ export const cycle = writable<CycleView>({
   prediction: null,
 });
 
-/** Whether data on this device is encrypted (passphrase set) or stored open. */
+/** Whether the active profile's data is encrypted or stored open. */
 export const encryptedMode = writable<boolean>(true);
 
-// In-memory only. Cleared on lock. `encrypted` mirrors encryptedMode for logic.
+// In-memory only. All reset on lock / profile switch.
 let dek: CryptoKey | null = null;
 let meta: VaultMeta | null = null;
 let encrypted = true;
+let activeId: string | null = null;
+let registry: Registry = { list: [], activeId: null };
 
 function setEncrypted(v: boolean): void {
   encrypted = v;
   encryptedMode.set(v);
 }
 
-/** Decide the opening screen based on the device's storage mode. */
+function publishRegistry(): void {
+  profiles.set(registry.list);
+  activeProfile.set(registry.list.find((p) => p.id === activeId) ?? null);
+}
+
+/** Enter the main app, always landing on the Today tab. */
+function toApp(): void {
+  activeTab.set('today');
+  screen.set('app');
+}
+
+// ---- startup ---------------------------------------------------------------
+
 export async function init(): Promise<void> {
-  const mode = await getMode();
-  settings.set(await getSettings());
-  if (mode === 'encrypted') {
-    meta = (await getVaultMeta()) ?? null;
+  registry = await getProfiles();
+  profiles.set(registry.list);
+  if (registry.list.length === 0) {
+    screen.set('onboarding');
+  } else if (registry.list.length === 1) {
+    await selectProfile(registry.list[0].id);
+  } else {
+    // Preselect the last-used profile in the picker, but let the user choose.
+    activeId = registry.activeId;
+    publishRegistry();
+    screen.set('picker');
+  }
+}
+
+/** Open a profile: unlock screen if encrypted, straight into the app if open. */
+export async function selectProfile(id: string): Promise<void> {
+  activeId = id;
+  const prof = registry.list.find((p) => p.id === id) ?? null;
+  registry.activeId = id;
+  await saveProfiles(registry);
+  publishRegistry();
+  settings.set(await getSettings(id));
+
+  if (prof?.encrypted) {
+    meta = (await getVaultMeta(id)) ?? null;
+    dek = null;
+    entries.set([]);
     setEncrypted(true);
     screen.set('locked');
-  } else if (mode === 'open') {
-    setEncrypted(false);
-    dek = null;
-    await loadEntries();
-    screen.set('app');
   } else {
-    screen.set('onboarding');
+    meta = null;
+    dek = null;
+    setEncrypted(false);
+    await loadEntries();
+    toApp();
   }
 }
 
 async function loadEntries(): Promise<void> {
-  const stored = await getAllStoredEntries();
+  if (!activeId) return;
+  const stored = await getAllStoredEntries(activeId);
   const loaded: DayEntry[] = [];
   for (const s of stored) {
     if (s.plain) loaded.push(s.plain);
@@ -136,72 +177,96 @@ function recompute(): void {
   });
 }
 
+// ---- profile navigation ----------------------------------------------------
+
+/** Leave the current profile and show the picker to choose another. */
+export function switchProfile(): void {
+  dek = null;
+  meta = null;
+  entries.set([]);
+  screen.set('picker');
+}
+
+/** From the picker: begin creating a new profile. */
+export function startAddProfile(): void {
+  dek = null;
+  meta = null;
+  activeId = null;
+  entries.set([]);
+  activeProfile.set(null);
+  screen.set('onboarding');
+}
+
+// ---- onboarding / profile creation -----------------------------------------
+
 export interface OnboardingInput {
+  name: string;
   lastPeriodStart: string;
   cycleLength: number;
   passphrase: string;
 }
 
-/** Create the vault, seed the first period, and return the one-time code. */
+function addProfileToRegistry(id: string, name: string, isEncrypted: boolean): void {
+  registry.list.push({
+    id,
+    name: name.trim() || 'Me',
+    encrypted: isEncrypted,
+    createdAt: new Date().toISOString(),
+  });
+  registry.activeId = id;
+}
+
+/** Create an encrypted profile, seed the first period, return the one-time code. */
 export async function completeOnboarding(input: OnboardingInput): Promise<string> {
+  const id = crypto.randomUUID();
   const vault = await createVault(input.passphrase);
-  await saveVaultMeta(vault.meta);
+  await saveVaultMeta(id, vault.meta);
   const newSettings: Settings = { fallbackCycleLength: input.cycleLength };
-  await saveSettings(newSettings);
+  await saveSettings(id, newSettings);
+  activeId = id;
   meta = vault.meta;
   dek = vault.dek;
   setEncrypted(true);
   settings.set(newSettings);
-  // Seed the last period start so a phase can be shown immediately.
+  addProfileToRegistry(id, input.name, true);
+  await saveProfiles(registry);
+  publishRegistry();
   await saveDay({ date: input.lastPeriodStart, flow: 'medium' });
-  // NOTE: we intentionally stay on the onboarding screen so the one-time
-  // recovery code can be shown. The caller invokes enterApp() once the user
-  // confirms they've saved it.
+  // Stay on onboarding so the recovery code can be shown; caller calls enterApp.
   return vault.recoveryCode;
 }
 
-/** Onboard WITHOUT a passphrase — data is stored unencrypted on this device. */
+/** Create an open (no-passphrase) profile — data stored unencrypted. */
 export async function completeOnboardingOpen(
   input: Omit<OnboardingInput, 'passphrase'>,
 ): Promise<void> {
+  const id = crypto.randomUUID();
   const newSettings: Settings = { fallbackCycleLength: input.cycleLength };
-  await saveSettings(newSettings);
+  await saveSettings(id, newSettings);
+  activeId = id;
   meta = null;
   dek = null;
   setEncrypted(false);
   settings.set(newSettings);
+  addProfileToRegistry(id, input.name, false);
+  await saveProfiles(registry);
+  publishRegistry();
   await saveDay({ date: input.lastPeriodStart, flow: 'medium' });
-  screen.set('app');
+  toApp();
 }
 
-/**
- * Add a passphrase to an existing open vault: create keys, encrypt everything
- * logged so far, and switch to encrypted mode. Returns the one-time code.
- */
-export async function addPassphrase(passphrase: string): Promise<string> {
-  const vault = await createVault(passphrase);
-  await saveVaultMeta(vault.meta);
-  meta = vault.meta;
-  dek = vault.dek;
-  setEncrypted(true);
-  // Re-store every existing day as ciphertext (overwrites the plaintext record).
-  for (const e of get(entries)) {
-    await putStoredEntry({ date: e.date, blob: await encryptJSON(dek, e) });
-  }
-  return vault.recoveryCode;
-}
-
-/** Move from onboarding into the app after the recovery code is acknowledged. */
 export function enterApp(): void {
-  screen.set('app');
+  toApp();
 }
+
+// ---- unlock / lock ---------------------------------------------------------
 
 export async function unlockWithPass(passphrase: string): Promise<void> {
   if (!meta) throw new Error('No vault on this device.');
   dek = await unlockWithPassphrase(meta, passphrase);
   setEncrypted(true);
   await loadEntries();
-  screen.set('app');
+  toApp();
 }
 
 export async function unlockWithCode(code: string): Promise<void> {
@@ -209,7 +274,7 @@ export async function unlockWithCode(code: string): Promise<void> {
   dek = await unlockWithRecoveryCode(meta, code);
   setEncrypted(true);
   await loadEntries();
-  screen.set('app');
+  toApp();
 }
 
 export function lock(): void {
@@ -218,63 +283,96 @@ export function lock(): void {
   screen.set('locked');
 }
 
+// ---- entries ---------------------------------------------------------------
+
 export function getEntry(date: string): DayEntry {
   return get(entries).find((e) => e.date === date) ?? { date };
 }
 
-/** Save (or, if emptied, delete) a single day's log. */
 export async function saveDay(entry: DayEntry): Promise<void> {
+  if (!activeId) throw new Error('No active profile.');
   if (encrypted && !dek) throw new Error('Locked.');
   const rest = get(entries).filter((e) => e.date !== entry.date);
   if (hasAnyData(entry)) {
     const stored =
       encrypted && dek
-        ? { date: entry.date, blob: await encryptJSON(dek, entry) }
-        : { date: entry.date, plain: entry };
+        ? { profileId: activeId, date: entry.date, blob: await encryptJSON(dek, entry) }
+        : { profileId: activeId, date: entry.date, plain: entry };
     await putStoredEntry(stored);
     rest.push(entry);
   } else {
-    await deleteStoredEntry(entry.date);
+    await deleteStoredEntry(activeId, entry.date);
   }
   rest.sort((a, b) => a.date.localeCompare(b.date));
   entries.set(rest);
   recompute();
 }
 
-export async function changeVaultPassphrase(newPassphrase: string): Promise<void> {
-  if (!meta || !dek) throw new Error('Locked.');
-  meta = await changePassphrase(meta, dek, newPassphrase);
-  await saveVaultMeta(meta);
+// ---- passphrase management -------------------------------------------------
+
+function setProfileEncryptedFlag(value: boolean): void {
+  const p = registry.list.find((x) => x.id === activeId);
+  if (p) p.encrypted = value;
 }
 
-/**
- * Remove the passphrase: decrypt every entry back to plaintext, drop the vault,
- * and switch to open mode. Data is then stored unencrypted on this device.
- */
-export async function removePassphrase(): Promise<void> {
-  if (!encrypted || !dek) throw new Error('No passphrase set.');
+export async function changeVaultPassphrase(newPassphrase: string): Promise<void> {
+  if (!meta || !dek || !activeId) throw new Error('Locked.');
+  meta = await changePassphrase(meta, dek, newPassphrase);
+  await saveVaultMeta(activeId, meta);
+}
+
+/** Add a passphrase to the active open profile, encrypting existing entries. */
+export async function addPassphrase(passphrase: string): Promise<string> {
+  if (!activeId) throw new Error('No active profile.');
+  const vault = await createVault(passphrase);
+  await saveVaultMeta(activeId, vault.meta);
+  meta = vault.meta;
+  dek = vault.dek;
+  setEncrypted(true);
   for (const e of get(entries)) {
-    await putStoredEntry({ date: e.date, plain: e }); // overwrites the ciphertext record
+    await putStoredEntry({ profileId: activeId, date: e.date, blob: await encryptJSON(dek, e) });
   }
-  await deleteVaultMeta();
+  setProfileEncryptedFlag(true);
+  await saveProfiles(registry);
+  publishRegistry();
+  return vault.recoveryCode;
+}
+
+/** Remove the active profile's passphrase, decrypting its entries to plaintext. */
+export async function removePassphrase(): Promise<void> {
+  if (!encrypted || !dek || !activeId) throw new Error('No passphrase set.');
+  for (const e of get(entries)) {
+    await putStoredEntry({ profileId: activeId, date: e.date, plain: e });
+  }
+  await deleteVaultMeta(activeId);
   meta = null;
   dek = null;
   setEncrypted(false);
+  setProfileEncryptedFlag(false);
+  await saveProfiles(registry);
+  publishRegistry();
 }
 
+// ---- backup / restore ------------------------------------------------------
+
 export async function exportBackup(): Promise<BackupFile> {
-  const backup = await buildBackup();
+  if (!activeId) throw new Error('No active profile.');
+  const backup = await buildBackup(activeId);
   if (!backup) throw new Error('Nothing to export yet.');
   return backup;
 }
 
-/** Restore from a backup file. An encrypted backup returns to the lock screen;
- * an open backup opens straight into the app. */
+/** Restore a backup into the ACTIVE profile. Encrypted backups return to lock. */
 export async function importBackup(backup: BackupFile): Promise<void> {
-  await restoreBackup(backup);
+  if (!activeId) throw new Error('No active profile.');
+  await restoreBackup(activeId, backup);
   settings.set(backup.settings ?? { fallbackCycleLength: 28 });
+  setProfileEncryptedFlag(Boolean(backup.meta));
+  await saveProfiles(registry);
+  publishRegistry();
   if (backup.meta) {
     meta = backup.meta;
+    dek = null;
     setEncrypted(true);
     lock();
   } else {
@@ -282,15 +380,40 @@ export async function importBackup(backup: BackupFile): Promise<void> {
     dek = null;
     setEncrypted(false);
     await loadEntries();
-    screen.set('app');
+    toApp();
   }
 }
 
+// ---- deletion --------------------------------------------------------------
+
+/** Delete the active profile and its data, then route to what remains. */
+export async function deleteThisProfile(): Promise<void> {
+  if (!activeId) return;
+  const removed = activeId;
+  await deleteProfileData(removed);
+  registry.list = registry.list.filter((p) => p.id !== removed);
+  if (registry.activeId === removed) registry.activeId = registry.list[0]?.id ?? null;
+  await saveProfiles(registry);
+  dek = null;
+  meta = null;
+  activeId = null;
+  entries.set([]);
+  publishRegistry();
+
+  if (registry.list.length === 0) screen.set('onboarding');
+  else if (registry.list.length === 1) await selectProfile(registry.list[0].id);
+  else screen.set('picker');
+}
+
+/** Erase every profile on this device. */
 export async function deleteEverything(): Promise<void> {
   await wipeEverything();
   dek = null;
   meta = null;
+  activeId = null;
+  registry = { list: [], activeId: null };
   setEncrypted(true);
   entries.set([]);
+  publishRegistry();
   screen.set('onboarding');
 }

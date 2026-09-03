@@ -4,7 +4,7 @@
  * changes (see updates.ts); the full list lives in Settings.
  */
 
-export const APP_VERSION = '0.2';
+export const APP_VERSION = '0.3';
 
 export interface ChangelogEntry {
   version: string;
@@ -14,6 +14,16 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '0.3',
+    date: '2026-09-03',
+    title: 'Profiles',
+    items: [
+      'More than one person can now use Cadence in the same browser — each with their own private, separate profile.',
+      'A profile picker lets you choose who’s using it; switch anytime from Settings.',
+      'Each profile is independently open or passphrase-protected — your data stays sealed from the others.',
+    ],
+  },
   {
     version: '0.2',
     date: '2026-08-28',

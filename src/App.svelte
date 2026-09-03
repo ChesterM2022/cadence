@@ -3,6 +3,7 @@
   import { screen, init } from './lib/store';
   import { initUpdates } from './lib/updates';
   import Onboarding from './routes/Onboarding.svelte';
+  import Picker from './routes/Picker.svelte';
   import Lock from './routes/Lock.svelte';
   import Main from './routes/Main.svelte';
 
@@ -18,6 +19,8 @@
   </div>
 {:else if $screen === 'onboarding'}
   <Onboarding />
+{:else if $screen === 'picker'}
+  <Picker />
 {:else if $screen === 'locked'}
   <Lock />
 {:else}
